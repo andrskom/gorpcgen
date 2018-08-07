@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/andrskom/gorpcgen/protocol/models"
-	"github.com/andrskom/gorpcgen/testservice/service/gen/server"
-	"github.com/andrskom/gorpcgen/testservice/service/handlers"
+	"github.com/andrskom/gorpcgen/testservice/handlers"
+	"github.com/andrskom/gorpcgen/testservice/nats/gen/server"
 	"github.com/nats-io/go-nats"
 	"github.com/sirupsen/logrus"
 )

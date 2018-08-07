@@ -1,11 +1,13 @@
+// +build teste2e
+
 package testing
 
 import (
 	"testing"
 
 	"github.com/andrskom/gorpcgen/protocol/models"
-	"github.com/andrskom/gorpcgen/testservice/service/gen/client"
-	"github.com/andrskom/gorpcgen/testservice/service/handlers"
+	"github.com/andrskom/gorpcgen/testservice/handlers"
+	"github.com/andrskom/gorpcgen/testservice/nats/gen/client"
 	"github.com/nats-io/go-nats"
 	"github.com/stretchr/testify/assert"
 )

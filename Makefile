@@ -1,12 +1,16 @@
 test-nats-gen:
 	@echo "+ $@"
 	@go run main.go \
-	    -gen.path=testservice/service/gen \
-	    -cfg.handlers-path=testservice/service/handlers
+	    -gen.path=testservice/nats/gen \
+	    -cfg.handlers-path=testservice/handlers
 
-test-nats-test: test-nats-gen
+test-nats-run: test-nats-gen
 	@echo "+ $@"
-	@go test -failfast testservice/service/nats/testing/nats_test.go
+	@go run testservice/nats/main.go
+
+test-nats-test:
+	@echo "+ $@"
+	@go test -tags=teste2e -failfast ./testservice/nats/testing/...
 
 nats-run:
 	@echo "+ $@"
