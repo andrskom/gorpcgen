@@ -30,6 +30,7 @@ func main() {
 	}
 
 	var (
+		parseLabel    string
 		genPath       string
 		serverSubPath string
 		clientSubPath string
@@ -38,6 +39,7 @@ func main() {
 		clientTmpl    string
 		handlersPath  string
 	)
+	flag.StringVar(&parseLabel, "gen.label", "goRpcGen", "Set if u don't want to use goRpcGen as label")
 	flag.StringVar(&genPath, "gen.path", "gen", "Path for generating")
 	flag.StringVar(&serverSubPath, "gen.server-path", "server", "Subpath for generating server")
 	flag.StringVar(&clientSubPath, "gen.client-path", "client", "Subpath for generating client")
@@ -79,12 +81,12 @@ func main() {
 		Imports:         make(map[string]string),
 	}
 
-	parseRPC.regExpService, err = regexp.Compile("//[ ]*goRpcGen:service")
+	parseRPC.regExpService, err = regexp.Compile("//[ ]*" + parseLabel + ":service")
 	if err != nil {
 		log.WithError(err).Fatal("Can't parse package")
 	}
 
-	parseRPC.regExpMethod, err = regexp.Compile("//[ ]*goRpcGen:method")
+	parseRPC.regExpMethod, err = regexp.Compile("//[ ]*" + parseLabel + ":method")
 	if err != nil {
 		log.WithError(err).Fatal("Can't parse package")
 	}
@@ -202,6 +204,10 @@ func docMatch(regexp *regexp.Regexp, doc *ast.CommentGroup) bool {
 }
 
 func updateServer(path string, tmplPath string, parseRPC *parseRPCStruct) error {
+	err := os.MkdirAll(path, 0755)
+	if err != nil {
+		return err
+	}
 	file, err := os.OpenFile(filepath.Join(path, "server.go"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		return err
@@ -222,6 +228,10 @@ func updateServer(path string, tmplPath string, parseRPC *parseRPCStruct) error 
 }
 
 func updateClient(path string, tmplPath string, parseRPC *parseRPCStruct) error {
+	err := os.MkdirAll(path, 0755)
+	if err != nil {
+		return err
+	}
 	file, err := os.OpenFile(filepath.Join(path, "client.go"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		return err

@@ -3,9 +3,9 @@ package errors
 // Error is error type of RPC error, u can use custom object, simple edit template.
 // Use code for build your logic on error(if u like it).
 type Error struct {
-	Code       Code              `json:"code"`
-	Detail     string            `json:"detail"`
-	Attributes map[string]string `json:"attributes"`
+	Code   Code     `json:"code"`
+	Detail string   `json:"detail"`
+	Errors []string `json:"errors"`
 }
 
 // Code is type for encapsulating Codes
@@ -23,3 +23,15 @@ const (
 	// CodeProtocol for protocol specified errors
 	CodeProtocol Code = "protocol"
 )
+
+func New(code Code, detail string, errs ...error) *Error {
+	e := &Error{
+		Code:   code,
+		Detail: detail,
+		Errors: make([]string, len(errs)),
+	}
+	for i := 0; i < len(errs); i++ {
+		e.Errors[i] = errs[i].Error()
+	}
+	return e
+}
