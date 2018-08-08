@@ -9,12 +9,12 @@ import (
 	"sync"
 	"time"
 
+	coreCtx "github.com/andrskom/gorpcgen/protocol/context"
 	coreErrors "github.com/andrskom/gorpcgen/protocol/errors"
 	coreModels "github.com/andrskom/gorpcgen/protocol/models"
-	coreCtx "github.com/andrskom/gorpcgen/protocol/context"
+	serverHandlers "{{ $.HandlersPackage }}"
 	"github.com/sirupsen/logrus"
 	"github.com/nats-io/go-nats"
-	serverHandlers "{{ $.HandlersPackage }}"
 	{{- if $.UseValidation }}
 	"github.com/xeipuuv/gojsonschema"
 	{{- end }}
@@ -22,7 +22,7 @@ import (
 
 type HandlersInterface interface {
 	{{range $method := .Methods -}}
-	{{ $method.Name }}(coreModels.RequestMeta, *serverHandlers.{{ $method.RequestName }}) (serverHandlers.{{ $method.ResponseName }}, *coreErrors.Error)
+	{{ $method.Name }}(*coreCtx.Context, *serverHandlers.{{ $method.RequestName }}) (*serverHandlers.{{ $method.ResponseName }}, *coreErrors.Error)
 	{{- end}}
 }
 
@@ -38,9 +38,9 @@ type Server struct {
 	shutdownTimeout time.Duration
 	shutdownChan    chan bool
 	runningWG       sync.WaitGroup
-	handlers        *serverHandlers.{{ $.ServiceName }}
+	handlers        HandlersInterface
 	metrics         MetricsInterface
-	{{if $.UseValidation -}}
+	{{- if $.UseValidation -}}
 	validators      *Validators
 	{{- end }}
 }
@@ -49,9 +49,9 @@ func NewServer(
 	ctx context.Context,
 	logger *logrus.Entry,
 	nc *nats.Conn,
-	handlers *serverHandlers.{{ $.ServiceName }},
+	handlers HandlersInterface,
 	metrics MetricsInterface,
-	{{if $.UseValidation -}}
+	{{- if $.UseValidation -}}
 	validators *Validators,
 	{{- end }}
 ) *Server {
@@ -63,7 +63,7 @@ func NewServer(
 		shutdownChan:    make(chan bool),
 		handlers:        handlers,
 		metrics:         metrics,
-		{{if $.UseValidation -}}
+		{{- if $.UseValidation -}}
 		validators:      validators,
 		{{- end }}
 	}
@@ -75,8 +75,8 @@ func NewServer(
 // nolint:gocyclo
 func (s *Server) Serve() error {
 	defer close(s.shutdownChan)
-	{{- if $.UseValidation -}}
-	if err := s.validators.check(); err != nil {
+	{{- if $.UseValidation}}
+	if err := s.validators.Check(); err != nil {
 		return err
 	}
 	{{- end }}
@@ -127,16 +127,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// Reload operation implementation
-func (s *Server) Reload() error {
-	return fmt.Errorf("method reload not implemented")
-}
-
-// Maintenance operation implementation
-func (s *Server) Maintenance() error {
-	return fmt.Errorf("method reload not implemented")
-}
-
 func (s *Server) listenTopic(service string, method string, topicFunc func(meta *coreModels.RequestMeta, data []byte) *coreModels.Response) {
 	topicName := fmt.Sprintf("%s.%s", service, method)
 	listenChan := make(chan *nats.Msg, 1000)
@@ -148,7 +138,7 @@ func (s *Server) listenTopic(service string, method string, topicFunc func(meta 
 	if err != nil {
 		s.logger.WithField("err", err).Error("Can't subscribe to subject")
 	}
-	s.logger.Debugf("Listen subject: '%s'", subscr.Subject)
+	s.logger.Infof("Listen subject: '%s'", subscr.Subject)
 	if err := s.nc.Flush(); err != nil {
 		s.logger.WithFields(logrus.Fields{"err": err}).Error("Can't flush nats connection")
 	}
@@ -160,7 +150,7 @@ func (s *Server) listenTopic(service string, method string, topicFunc func(meta 
 				s.logger.
 					WithField("topic", topicName).
 					WithField("data", string(msg.Data)).
-					Debug("Request")
+					Info("Request")
 				defer func() {
 					if r := recover(); r != nil {
 						s.logger.WithField("topic", topicName).Errorf(
@@ -174,7 +164,7 @@ func (s *Server) listenTopic(service string, method string, topicFunc func(meta 
 				s.metrics.APIDurationFunc(service, method, func() (respType coreModels.ResponseType) {
 					{{if $.UseValidation -}}
 					validationRequest, err := gojsonschema.Validate(
-						s.validators.getLoader(method + "Request"),
+						s.validators.GetLoader(method + "Request"),
 						gojsonschema.NewBytesLoader(msg.Data),
 					)
 					if err != nil {
@@ -250,9 +240,9 @@ func (s *Server) sendResponse(
 		bytes = coreModels.NewJSONMarshallErrResponseBytes(response.Meta.RequestID)
 	}
 
-	{{if $.UseValidation -}}
+	{{- if $.UseValidation -}}
 	validationResponse, err := gojsonschema.Validate(
-	s.validators.getLoader(method + "Response"),
+	s.validators.GetLoader(method + "Response"),
 		gojsonschema.NewBytesLoader(respBytes),
 	)
 	if err != nil {
@@ -280,13 +270,12 @@ func (s *Server) sendResponse(
 	s.logger.
 		WithField("topic", topicName).
 		WithField("data", string(bytes)).
-		Debug("Response")
+		Info("Response")
 	return responseType
 }
-
+{{if $.UseValidation }}
 //======================================================================================================================
 
-{{if $.UseValidation -}}
 type Validators struct {
 	list          []string
 	validatorsMap map[string]gojsonschema.JSONLoader

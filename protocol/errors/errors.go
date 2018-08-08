@@ -22,6 +22,8 @@ const (
 	CodeRestricted Code = "restricted"
 	// CodeProtocol for protocol specified errors
 	CodeProtocol Code = "protocol"
+	// CodeClient for client specified errors
+	CodeClient Code = "client"
 )
 
 func New(code Code, detail string, errs ...error) *Error {
