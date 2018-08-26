@@ -167,20 +167,20 @@ func (pr *parseRPCStruct) parseFile(f *ast.File) {
 				continue
 			}
 			m := Method{Name: funcDecl.Name.Name, TitleName: strings.Title(funcDecl.Name.Name)}
-			if funcDecl.Type != nil &&
-				funcDecl.Type.Params != nil &&
-				len(funcDecl.Type.Params.List) != 2 &&
+			if funcDecl.Type == nil ||
+				funcDecl.Type.Params == nil ||
+				len(funcDecl.Type.Params.List) != 2 ||
 				reflect.TypeOf(funcDecl.Type.Params.List[1].Type).String() != "*ast.StarExpr" {
 
-				log.Errorf("bad implementation of rpc method '%s'", m.Name)
+				log.Errorf("bad implementation of rpc method '%s' (wrong method params)", m.Name)
 				continue
 			}
-			if funcDecl.Type != nil &&
-				funcDecl.Type.Results != nil &&
-				len(funcDecl.Type.Results.List) != 2 &&
+			if funcDecl.Type == nil ||
+				funcDecl.Type.Results == nil ||
+				len(funcDecl.Type.Results.List) != 2 ||
 				reflect.TypeOf(funcDecl.Type.Results.List[0].Type).String() != "*ast.StarExpr" {
 
-				log.Errorf("bad implementation of rpc method '%s'", m.Name)
+				log.Errorf("bad implementation of rpc method '%s' (wrong method results)", m.Name)
 				continue
 			}
 			m.RequestName = funcDecl.Type.Params.List[1].Type.(*ast.StarExpr).X.(*ast.Ident).Name
