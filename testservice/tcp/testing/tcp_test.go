@@ -3,12 +3,11 @@
 package testing
 
 import (
-	"net/http"
 	"testing"
 
 	"github.com/andrskom/gorpcgen/protocol/models"
 	"github.com/andrskom/gorpcgen/testservice/handlers"
-	"github.com/andrskom/gorpcgen/testservice/http/gen/client"
+	"github.com/andrskom/gorpcgen/testservice/tcp/gen/client"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,10 +15,10 @@ import (
 func Test_Service(t *testing.T) {
 	a := assert.New(t)
 
-	c := client.NewClient(
-		logrus.WithField("client", "http"),
-		http.DefaultClient,
-		"http://localhost:4020/",
+	c := client.New(
+		logrus.WithField("client", "tcp"),
+		"localhost",
+		"8081",
 	)
 	meta := models.RequestMeta{RequestID: "reqId", Origin: "client"}
 	{

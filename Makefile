@@ -36,6 +36,22 @@ test-http-test:
 	@echo "+ $@"
 	@go test -tags=teste2e -failfast ./testservice/http/testing/...
 
+test-tcp-gen:
+	@echo "+ $@"
+	@go run main.go \
+	    -gen.path=testservice/tcp/gen \
+	    -cfg.handlers-path=testservice/handlers \
+	    -cfg.client-tmpl=.templates/tcp/client.gotmpl \
+	    -cfg.server-tmpl=.templates/tcp/server.gotmpl
+
+test-tcp-run: test-tcp-gen
+	@echo "+ $@"
+	@go run testservice/tcp/main.go
+
+test-tcp-test:
+	@echo "+$@"
+	@go test -tags=teste2e -failfast ./testservice/tcp/testing/...
+
 .PHONY: all \
 		test-nats-gen \
 		test-nats-run \
@@ -44,4 +60,7 @@ test-http-test:
 		nats-stop \
 		test-http-gen \
 		test-http-run \
-		test-http-test
+		test-http-test \
+		test-tcp-gen \
+		test-tcp-run \
+		test-tcp-test
